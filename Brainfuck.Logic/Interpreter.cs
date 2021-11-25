@@ -10,12 +10,43 @@ public class Interpreter
     private int _memSize;
     private string? _input;
     private char[]? _program;
-
-    public void Parse(string program, int memSize)
+    private int _pointer;
+    private byte[]? _memory;
+    private bool _display;
+    private int _delay;
+    
+    public Interpreter(int? memSize, bool display, int delay = 0)
+    {
+        if(memSize is null or < 1)
+            throw new ConfigurationException("[Config] Memory size must be greater than 0");
+        _memSize = memSize.Value;
+        _display = display;
+        if(delay < 0)
+            throw new ConfigurationException("[Config] Delay must be greater than or equal to 0");
+        _delay = delay;
+    }
+    
+    public void SetMemorySize(int memSize)
     {
         if(memSize < 1)
             throw new ConfigurationException("[Config] Memory size must be greater than 0");
         _memSize = memSize;
+    }
+    
+    public void SetDelay(int delay)
+    {
+        if(delay < 0)
+            throw new ConfigurationException("[Config] Delay must be greater than or equal to 0");
+        _delay = delay;
+    }
+    
+    public void SetDisplay(bool display)
+    {
+        _display = display;
+    }
+
+    public void Parse(string program)
+    {
         _input = BrainfuckSyntax.Replace(program, "");
         var len = _input.Length;
         _program = _input.ToCharArray();
@@ -34,84 +65,119 @@ public class Interpreter
     {
         if (_input is null || _program is null)
             throw new NullReferenceException("Program has not been loaded");
-        var memory = new byte[_memSize];
-        var pointer = 0;
+        _memory = new byte[_memSize];
+        _pointer = 0;
         var written = 0;
+        var topOffset = _display ? 5 : 0;
         var length = _program.Length;
 
+        if (_display)
+            InitializeDisplay();
+        
+        Console.SetCursorPosition(0, topOffset);
+        Console.Write("Input: [  ] | Output: ");
+        
         for (var i = 0; i < length; i++)
         {
-            // DisplayTape(memory, pointer);
+            if(_display)
+                DisplayTape();
             switch (_program[i])
             {
                 case '>':
-                    pointer++;
-                    if(pointer >= _memSize)
-                        throw new RuntimeException("[Runtime] Memory pointer is out of bounds");
+                    _pointer++;
+                    if(_pointer >= _memSize)
+                        throw new RuntimeException($"[Runtime] Memory pointer is out of bounds (Overflow / [{_pointer}])");
                     break;
                 case '<':
-                    pointer--;
-                    if(pointer < 0)
-                        throw new RuntimeException("[Runtime] Memory pointer is out of bounds");
+                    _pointer--;
+                    if(_pointer < 0)
+                        throw new RuntimeException($"[Runtime] Memory pointer is out of bounds (Underflow / [{_pointer}])");
                     break;
                 case '+':
-                    memory[pointer]++;
+                    _memory[_pointer]++;
                     break;
                 case '-':
-                    memory[pointer]--;
+                    _memory[_pointer]--;
                     break;
                 case '.':
-                    Console.SetCursorPosition(written, 5);
-                    Console.Write((char)memory[pointer]);
+                    Console.SetCursorPosition(22+written, topOffset);
+                    Console.Write((char)_memory[_pointer]);
                     written++;
                     break;
                 case ',':
-                    Console.SetCursorPosition(0, 5);
-                    memory[pointer] = (byte)Console.ReadKey().KeyChar;
-                    Console.SetCursorPosition(0, 5);
+                    Console.SetCursorPosition(9, topOffset);
+                    _memory[_pointer] = (byte)Console.ReadKey().KeyChar;
+                    Console.SetCursorPosition(9, topOffset);
                     Console.Out.Write(' ');
                     break;
                 case '[':
-                    if (memory[pointer] == 0)
-                    {
-                        var j = i;
-                        while (_program[j] != ']') j++;
-                        i = j;
+                    if (_memory[_pointer] == 0) {
+                        var skip = 0;
+                        var ptr = i + 1;
+                        while (_program[ptr] != ']' || skip > 0) {
+                            switch (_program[ptr])
+                            {
+                                case '[':
+                                    skip += 1;
+                                    break;
+                                case ']':
+                                    skip -= 1;
+                                    break;
+                            }
+                            ptr += 1;
+                            i = ptr;
+                        }
                     }
                     break;
                 case ']':
-                    if (memory[pointer] != 0)
-                    {
-                        var j = i;
-                        while (_program[j] != '[') j--;
-                        i = j;
+                    if (_memory[_pointer] != 0) {
+                        var skip = 0;
+                        var ptr = i - 1;
+                        while (_program[ptr] != '[' || skip > 0) {
+                            switch (_program[ptr])
+                            {
+                                case ']':
+                                    skip += 1;
+                                    break;
+                                case '[':
+                                    skip -= 1;
+                                    break;
+                            }
+                            ptr -= 1;
+                            i = ptr;
+                        }
                     }
                     break;
             }}
     }
 
-    public void DisplayTape(byte[] memory, int pointer)
+    private static void InitializeDisplay()
     {
         Console.SetCursorPosition(0, 0);
         var width = Console.WindowWidth;
-        Console.Out.Write(new string('-', width)); // Draw top border
+        Console.Out.Write(new string('-', width));
+        Console.SetCursorPosition(0, 2);
+        Console.Out.WriteLine(new string('-', width));
+    }
+
+    private void DisplayTape()
+    {
+        if(_memory is null)
+            throw new RuntimeException("[Runtime] Memory is not initialized while displaying tape");
         
-        var left = pointer - width / 2 / 6;
+        var width = Console.WindowWidth;
+        var left = _pointer - width / 2 / 6;
         
         Console.SetCursorPosition(0, 1);
-        for (var i = left > 0 ? left : 0; i < width/4; i++)
+        for (var i = left > 0 ? left : 0; i < _memSize && i < width/6; i++)
         {
             Console.Out.Write("| ");
-            if (i == pointer)
+            if (i == _pointer)
                 Console.ForegroundColor = ConsoleColor.Red;
-            Console.Out.Write($"{memory[i].ToString().PadLeft(3, '0')} ");
+            Console.Out.Write($"{_memory[i].ToString().PadLeft(3, '0')} ");
             Console.ForegroundColor = ConsoleColor.White;
         }
         Console.Out.Write("|");
-        
-        Console.SetCursorPosition(0, 2);
-        Console.Out.WriteLine(new string('-', width)); // Draw bottom border
-        
-        Thread.Sleep(10);
+        Thread.Sleep(_delay);
     }
 }
