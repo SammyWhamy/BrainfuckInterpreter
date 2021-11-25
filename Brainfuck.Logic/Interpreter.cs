@@ -7,13 +7,13 @@ public class Interpreter
 {
     private static readonly Regex BrainfuckSyntax = new(@"[^><+.,\-\[\]]+");
     private readonly Dictionary<char, int> _tokens = new();
-    private readonly bool _display;
     private readonly int _memSize;
     private readonly int _delay;
     private string? _input;
     private char[]? _program;
     private byte[]? _memory;
     private int _pointer;
+    private bool _display;
 
     public Interpreter(int? memSize, bool display, int delay = 0)
     {
@@ -161,5 +161,10 @@ public class Interpreter
         
         if(_delay > 0)
             Thread.Sleep(_delay);
+    }
+
+    public void Stop()
+    {
+        _display = false;
     }
 }
