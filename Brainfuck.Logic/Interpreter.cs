@@ -7,14 +7,14 @@ public class Interpreter
 {
     private static readonly Regex BrainfuckSyntax = new(@"[^><+.,\-\[\]]+");
     private readonly Dictionary<char, int> _tokens = new();
-    private int _memSize;
+    private readonly bool _display;
+    private readonly int _memSize;
+    private readonly int _delay;
     private string? _input;
     private char[]? _program;
-    private int _pointer;
     private byte[]? _memory;
-    private bool _display;
-    private int _delay;
-    
+    private int _pointer;
+
     public Interpreter(int? memSize, bool display, int delay = 0)
     {
         if(memSize is null or < 1)
@@ -24,25 +24,6 @@ public class Interpreter
         if(delay < 0)
             throw new ConfigurationException("[Config] Delay must be greater than or equal to 0");
         _delay = delay;
-    }
-    
-    public void SetMemorySize(int memSize)
-    {
-        if(memSize < 1)
-            throw new ConfigurationException("[Config] Memory size must be greater than 0");
-        _memSize = memSize;
-    }
-    
-    public void SetDelay(int delay)
-    {
-        if(delay < 0)
-            throw new ConfigurationException("[Config] Delay must be greater than or equal to 0");
-        _delay = delay;
-    }
-    
-    public void SetDisplay(bool display)
-    {
-        _display = display;
     }
 
     public void Parse(string program)
@@ -154,10 +135,9 @@ public class Interpreter
     private static void InitializeDisplay()
     {
         Console.SetCursorPosition(0, 0);
-        var width = Console.WindowWidth;
-        Console.Out.Write(new string('-', width));
+        Console.Out.Write(new string('-', Console.WindowWidth));
         Console.SetCursorPosition(0, 2);
-        Console.Out.WriteLine(new string('-', width));
+        Console.Out.WriteLine(new string('-', Console.WindowWidth));
     }
 
     private void DisplayTape()
@@ -178,6 +158,8 @@ public class Interpreter
             Console.ForegroundColor = ConsoleColor.White;
         }
         Console.Out.Write("|");
-        Thread.Sleep(_delay);
+        
+        if(_delay > 0)
+            Thread.Sleep(_delay);
     }
 }
