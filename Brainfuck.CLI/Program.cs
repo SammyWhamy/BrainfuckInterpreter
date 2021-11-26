@@ -37,6 +37,7 @@ public static class Program
         {
             interpreter.Parse(input!);
             interpreter.Run();
+            Console.SetCursorPosition(0, argData.Has("display") ? 6 : 1);
             Exit(true, "\n[Success] Finished execution.");
         }
         catch (BrainfuckException ex)
