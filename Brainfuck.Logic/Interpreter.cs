@@ -82,13 +82,17 @@ public class Interpreter
                     _memory[_pointer]--;
                     break;
                 case '.':
-                    Console.SetCursorPosition(22+written, TopOffset);
-                    Console.Write((char)_memory[_pointer]);
+                    var value = _memory[_pointer];
+                    if(_display)
+                        Console.SetCursorPosition(22+written, TopOffset);
+                    Console.Write((char)value);
                     written++;
-                    if(written >= Console.WindowWidth-22)
+                    if(written >= Console.WindowWidth-22 || value is 10 or 13)
                     {
                         written = 0;
                         TopOffset++;
+                        if(!_display)
+                            Console.SetCursorPosition(22+written, TopOffset);
                     }
                     break;
                 case ',':
@@ -101,18 +105,20 @@ public class Interpreter
                     if (_memory[_pointer] == 0) {
                         var skip = 0;
                         var ptr = i + 1;
-                        while (_program[ptr] != ']' || skip > 0) {
-                            switch (_program[ptr])
+                        var val = _program[ptr];
+                        while (val != ']' || skip > 0) {
+                            switch (val)
                             {
                                 case '[':
-                                    skip += 1;
+                                    skip++;
                                     break;
                                 case ']':
-                                    skip -= 1;
+                                    skip--;
                                     break;
                             }
                             ptr += 1;
                             i = ptr;
+                            val = _program[ptr];
                         }
                     }
                     break;
@@ -120,18 +126,20 @@ public class Interpreter
                     if (_memory[_pointer] != 0) {
                         var skip = 0;
                         var ptr = i - 1;
-                        while (_program[ptr] != '[' || skip > 0) {
-                            switch (_program[ptr])
+                        var val = _program[ptr];
+                        while (val != '[' || skip > 0) {
+                            switch (val)
                             {
                                 case ']':
-                                    skip += 1;
+                                    skip++;
                                     break;
                                 case '[':
-                                    skip -= 1;
+                                    skip--;
                                     break;
                             }
                             ptr -= 1;
                             i = ptr;
+                            val = _program[ptr];
                         }
                     }
                     break;
