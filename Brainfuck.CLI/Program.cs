@@ -29,6 +29,7 @@ public static class Program
         Console.CancelKeyPress += delegate
         {
             interpreter.Stop();
+            Thread.Sleep(100);
             Console.SetCursorPosition(0, interpreter.TopOffset);
             Console.WriteLine("\n[Interpreter] Stopped.");
         };

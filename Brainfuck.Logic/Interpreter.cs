@@ -14,6 +14,7 @@ public class Interpreter
     private byte[]? _memory;
     private int _pointer;
     private bool _display;
+    private bool _stopped;
     public int TopOffset;
 
     public Interpreter(int? memSize, bool display, int delay = 0)
@@ -45,12 +46,13 @@ public class Interpreter
 
     public void Run()
     {
+        _stopped = false;
         if (_input is null || _program is null)
             throw new NullReferenceException("Program has not been loaded");
         _memory = new byte[_memSize];
         _pointer = 0;
         var written = 0;
-        TopOffset = _display ? 5 : 0;
+        TopOffset = _display ? 6 : 0;
         var length = _program.Length;
 
         if (_display)
@@ -61,6 +63,8 @@ public class Interpreter
         
         for (var i = 0; i < length; i++)
         {
+            if (_stopped)
+                break;
             if(_display)
                 DisplayTape();
             switch (_program[i])
@@ -148,9 +152,9 @@ public class Interpreter
 
     private static void InitializeDisplay()
     {
-        Console.SetCursorPosition(0, 0);
+        Console.SetCursorPosition(0, 1);
         Console.Out.Write(new string('-', Console.WindowWidth));
-        Console.SetCursorPosition(0, 2);
+        Console.SetCursorPosition(0, 3);
         Console.Out.WriteLine(new string('-', Console.WindowWidth));
     }
 
@@ -162,9 +166,12 @@ public class Interpreter
         var width = Console.WindowWidth;
         var left = _pointer - width / 2 / 6;
         
-        Console.SetCursorPosition(0, 1);
-        for (var i = left > 0 ? left : 0; i < _memSize && i < width/6; i++)
+        Console.SetCursorPosition(0, 2);
+        for (var (i, j) = (left > 0 ? left : 0, 0); i < _memSize && j < width / 6; i++, j++)
         {
+            Console.SetCursorPosition(j*6+1, 0);
+            Console.Out.Write(j % 2 != 0 ? "     " : $"0x{i:X3}");
+            Console.SetCursorPosition(j*6, 2);
             Console.Out.Write("| ");
             if (i == _pointer)
                 Console.ForegroundColor = ConsoleColor.Red;
@@ -172,7 +179,8 @@ public class Interpreter
             Console.ForegroundColor = ConsoleColor.White;
         }
         Console.Out.Write("|");
-        
+        // Console.SetCursorPosition(Math.Min(_pointer, width/2), 0);
+        // Console.Out.Write($"0x{_pointer}");
         if(_delay > 0)
             Thread.Sleep(_delay);
     }
@@ -180,5 +188,6 @@ public class Interpreter
     public void Stop()
     {
         _display = false;
+        _stopped = true;
     }
 }
