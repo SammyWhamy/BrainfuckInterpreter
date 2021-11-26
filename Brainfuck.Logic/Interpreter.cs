@@ -14,6 +14,7 @@ public class Interpreter
     private byte[]? _memory;
     private int _pointer;
     private bool _display;
+    public int TopOffset;
 
     public Interpreter(int? memSize, bool display, int delay = 0)
     {
@@ -49,13 +50,13 @@ public class Interpreter
         _memory = new byte[_memSize];
         _pointer = 0;
         var written = 0;
-        var topOffset = _display ? 5 : 0;
+        TopOffset = _display ? 5 : 0;
         var length = _program.Length;
 
         if (_display)
             InitializeDisplay();
         
-        Console.SetCursorPosition(0, topOffset);
+        Console.SetCursorPosition(0, TopOffset);
         Console.Write("Input: [  ] | Output: ");
         
         for (var i = 0; i < length; i++)
@@ -81,14 +82,19 @@ public class Interpreter
                     _memory[_pointer]--;
                     break;
                 case '.':
-                    Console.SetCursorPosition(22+written, topOffset);
+                    Console.SetCursorPosition(22+written, TopOffset);
                     Console.Write((char)_memory[_pointer]);
                     written++;
+                    if(written >= Console.WindowWidth-22)
+                    {
+                        written = 0;
+                        TopOffset++;
+                    }
                     break;
                 case ',':
-                    Console.SetCursorPosition(9, topOffset);
+                    Console.SetCursorPosition(9, TopOffset);
                     _memory[_pointer] = (byte)Console.ReadKey().KeyChar;
-                    Console.SetCursorPosition(9, topOffset);
+                    Console.SetCursorPosition(9, TopOffset);
                     Console.Out.Write(' ');
                     break;
                 case '[':

@@ -29,7 +29,7 @@ public static class Program
         Console.CancelKeyPress += delegate
         {
             interpreter.Stop();
-            Console.SetCursorPosition(0, argData.Has("display") ? 6 : 1);
+            Console.SetCursorPosition(0, interpreter.TopOffset);
             Console.WriteLine("\n[Interpreter] Stopped.");
         };
         
@@ -37,12 +37,12 @@ public static class Program
         {
             interpreter.Parse(input!);
             interpreter.Run();
-            Console.SetCursorPosition(0, argData.Has("display") ? 6 : 1);
+            Console.SetCursorPosition(0, interpreter.TopOffset);
             Exit(true, "\n[Success] Finished execution.");
         }
         catch (BrainfuckException ex)
         {
-            Console.SetCursorPosition(0, argData.Has("display") ? 6 : 1);
+            Console.SetCursorPosition(0, interpreter.TopOffset);
             Exit(false, ex.Message);
         }
     }
